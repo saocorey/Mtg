@@ -1,0 +1,6 @@
+{
+  "name": "Command Ledger",
+  "description": "Track Magic: The Gathering Commander deck win rates, opponent records, and multiplayer Elo rankings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

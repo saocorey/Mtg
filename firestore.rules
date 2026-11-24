@@ -1,0 +1,240 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidDeck(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+             data.commander is string && data.commander.size() >= 1 && data.commander.size() <= 80 &&
+             (!('partnerCommander' in data) || (data.partnerCommander is string && data.partnerCommander.size() >= 1 && data.partnerCommander.size() <= 80)) &&
+             data.colorIdentity is list && data.colorIdentity.size() <= 5 &&
+             (data.colorIdentity.size() == 0 || data.colorIdentity[0] is string) &&
+             data.bracket is int && data.bracket >= 1 && data.bracket <= 5 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+             data.archived is bool &&
+             data.elo is int && data.elo >= 100 && data.elo <= 4000 &&
+             data.peakElo is int && data.peakElo >= 100 && data.peakElo <= 4000 &&
+             data.gamesPlayed is int && data.gamesPlayed >= 0 &&
+             data.wins is int && data.wins >= 0 &&
+             data.losses is int && data.losses >= 0 &&
+             data.draws is int && data.draws >= 0 &&
+             data.lastEloDelta is int && data.lastEloDelta >= -500 && data.lastEloDelta <= 500 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidOpponent(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 50 &&
+             (!('favoriteCommander' in data) || (data.favoriteCommander is string && data.favoriteCommander.size() >= 1 && data.favoriteCommander.size() <= 80)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+             data.avatarColorHex is string && data.avatarColorHex.size() == 7 &&
+             data.avatarColorHex.matches('^#[0-9A-Fa-f]{6}$') &&
+             data.elo is int && data.elo >= 100 && data.elo <= 4000 &&
+             data.peakElo is int && data.peakElo >= 100 && data.peakElo <= 4000 &&
+             data.gamesPlayed is int && data.gamesPlayed >= 0 &&
+             data.wins is int && data.wins >= 0 &&
+             data.winsAgainstUser is int && data.winsAgainstUser >= 0 &&
+             data.lossesToUser is int && data.lossesToUser >= 0 &&
+             data.draws is int && data.draws >= 0 &&
+             data.lastEloDelta is int && data.lastEloDelta >= -500 && data.lastEloDelta <= 500 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMatch(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             isValidId(data.deckId) &&
+             data.deckName is string && data.deckName.size() >= 1 && data.deckName.size() <= 60 &&
+             data.deckCommander is string && data.deckCommander.size() >= 1 && data.deckCommander.size() <= 80 &&
+             data.deckColorIdentity is list && data.deckColorIdentity.size() <= 5 &&
+             (data.deckColorIdentity.size() == 0 || data.deckColorIdentity[0] is string) &&
+             data.opponentIds is list && data.opponentIds.size() >= 1 && data.opponentIds.size() <= 5 &&
+             data.opponentIds[0] is string &&
+             data.opponentNames is list && data.opponentNames.size() == data.opponentIds.size() &&
+             data.opponentNames[0] is string &&
+             data.opponentCommanders is list && data.opponentCommanders.size() <= 5 &&
+             (data.opponentCommanders.size() == 0 || data.opponentCommanders[0] is string) &&
+             data.outcome in ['WIN', 'LOSS', 'DRAW'] &&
+             data.winnerType in ['USER', 'OPPONENT', 'TEAM', 'DRAW'] &&
+             (
+               (data.winnerType == 'OPPONENT' &&
+                 data.outcome == 'LOSS' &&
+                 'winningOpponentId' in data && isValidId(data.winningOpponentId) &&
+                 'winningOpponentName' in data && data.winningOpponentName is string &&
+                 data.winningOpponentName.size() >= 1 && data.winningOpponentName.size() <= 50 &&
+                 !('winningOpponentIds' in data) &&
+                 !('winningOpponentNames' in data)) ||
+               (data.winnerType == 'TEAM' &&
+                 data.outcome in ['WIN', 'LOSS'] &&
+                 !('winningOpponentId' in data) &&
+                 !('winningOpponentName' in data) &&
+                 'winningOpponentIds' in data &&
+                 data.winningOpponentIds is list &&
+                 data.winningOpponentIds.size() >= 1 &&
+                 data.winningOpponentIds.size() <= 5 &&
+                 data.winningOpponentIds[0] is string &&
+                 (data.outcome == 'WIN' || data.winningOpponentIds.size() >= 2) &&
+                 'winningOpponentNames' in data &&
+                 data.winningOpponentNames is list &&
+                 data.winningOpponentNames.size() == data.winningOpponentIds.size() &&
+                 data.winningOpponentNames[0] is string) ||
+               (data.winnerType == 'USER' &&
+                 data.outcome == 'WIN' &&
+                 !('winningOpponentId' in data) &&
+                 !('winningOpponentName' in data) &&
+                 !('winningOpponentIds' in data) &&
+                 !('winningOpponentNames' in data)) ||
+               (data.winnerType == 'DRAW' &&
+                 data.outcome == 'DRAW' &&
+                 !('winningOpponentId' in data) &&
+                 !('winningOpponentName' in data) &&
+                 !('winningOpponentIds' in data) &&
+                 !('winningOpponentNames' in data))
+             ) &&
+             data.podSize is int && data.podSize >= 2 && data.podSize <= 6 &&
+             (!('turnCount' in data) || (data.turnCount is int && data.turnCount >= 1 && data.turnCount <= 99)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+             data.deckEloBefore is int && data.deckEloBefore >= 100 && data.deckEloBefore <= 4000 &&
+             data.deckEloAfter is int && data.deckEloAfter >= 100 && data.deckEloAfter <= 4000 &&
+             data.deckEloDelta is int && data.deckEloDelta >= -500 && data.deckEloDelta <= 500 &&
+             data.opponentEloDeltas is map && data.opponentEloDeltas.size() <= 5 &&
+             data.playedAtMillis is int && data.playedAtMillis > 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId}/decks/{deckId} {
+      allow get: if isOwner(userId) && isValidId(deckId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(deckId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'name', 'commander', 'colorIdentity', 'bracket',
+                         'archived', 'elo', 'peakElo', 'gamesPlayed', 'wins',
+                         'losses', 'draws', 'lastEloDelta', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'name', 'commander', 'partnerCommander', 'colorIdentity',
+                         'bracket', 'notes', 'archived', 'elo', 'peakElo', 'gamesPlayed',
+                         'wins', 'losses', 'draws', 'lastEloDelta', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidDeck(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(deckId) &&
+                       isValidDeck(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'commander', 'partnerCommander', 'colorIdentity',
+                         'bracket', 'notes', 'archived', 'elo', 'peakElo', 'gamesPlayed',
+                         'wins', 'losses', 'draws', 'lastEloDelta', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(deckId);
+    }
+
+    match /users/{userId}/opponents/{opponentId} {
+      allow get: if isOwner(userId) && isValidId(opponentId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(opponentId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'name', 'avatarColorHex', 'elo', 'peakElo',
+                         'gamesPlayed', 'wins', 'winsAgainstUser', 'lossesToUser',
+                         'draws', 'lastEloDelta', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'name', 'favoriteCommander', 'notes', 'avatarColorHex',
+                         'elo', 'peakElo', 'gamesPlayed', 'wins', 'winsAgainstUser',
+                         'lossesToUser', 'draws', 'lastEloDelta', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidOpponent(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(opponentId) &&
+                       isValidOpponent(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'favoriteCommander', 'notes', 'avatarColorHex',
+                         'elo', 'peakElo', 'gamesPlayed', 'wins', 'winsAgainstUser',
+                         'lossesToUser', 'draws', 'lastEloDelta', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(opponentId);
+    }
+
+    match /users/{userId}/matches/{matchId} {
+      allow get: if isOwner(userId) && isValidId(matchId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(matchId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'deckId', 'deckName', 'deckCommander', 'deckColorIdentity',
+                         'opponentIds', 'opponentNames', 'opponentCommanders', 'outcome',
+                         'winnerType', 'podSize', 'deckEloBefore', 'deckEloAfter',
+                         'deckEloDelta', 'opponentEloDeltas', 'playedAtMillis',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'deckId', 'deckName', 'deckCommander', 'deckColorIdentity',
+                         'opponentIds', 'opponentNames', 'opponentCommanders', 'outcome',
+                         'winnerType', 'winningOpponentId', 'winningOpponentName',
+                         'winningOpponentIds', 'winningOpponentNames', 'podSize',
+                         'turnCount', 'notes', 'deckEloBefore', 'deckEloAfter',
+                         'deckEloDelta', 'opponentEloDeltas', 'playedAtMillis',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidMatch(incoming(), userId) &&
+                       exists(/databases/$(database)/documents/users/$(userId)/decks/$(incoming().deckId));
+
+      allow update: if isOwner(userId) &&
+                       isValidId(matchId) &&
+                       isValidMatch(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'deckId', 'deckName', 'deckCommander', 'deckColorIdentity',
+                         'opponentIds', 'opponentNames', 'opponentCommanders', 'outcome',
+                         'winnerType', 'winningOpponentId', 'winningOpponentName',
+                         'winningOpponentIds', 'winningOpponentNames', 'podSize',
+                         'turnCount', 'notes', 'deckEloBefore', 'deckEloAfter',
+                         'deckEloDelta', 'opponentEloDeltas', 'playedAtMillis', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(matchId);
+    }
+  }
+}

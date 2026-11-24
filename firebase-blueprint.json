@@ -1,0 +1,323 @@
+{
+  "entities": {
+    "Deck": {
+      "title": "Deck",
+      "description": "A Commander deck owned by the user, tracking win-loss record and Elo rating.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "name": {
+          "type": "string",
+          "description": "Deck title (1-60 chars)."
+        },
+        "commander": {
+          "type": "string",
+          "description": "Primary commander card name (1-80 chars)."
+        },
+        "partnerCommander": {
+          "type": "string",
+          "description": "Optional partner or background commander name."
+        },
+        "colorIdentity": {
+          "type": "array",
+          "description": "MTG color identity codes (W, U, B, R, G, C), up to 5 items."
+        },
+        "bracket": {
+          "type": "integer",
+          "description": "Commander power bracket from 1 to 5."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional deck notes or archetype tags."
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "Whether the deck is archived from active rotation."
+        },
+        "elo": {
+          "type": "integer",
+          "description": "Current Elo rating (starts at 1200)."
+        },
+        "peakElo": {
+          "type": "integer",
+          "description": "Highest Elo rating achieved by this deck."
+        },
+        "gamesPlayed": {
+          "type": "integer",
+          "description": "Total matches played with this deck."
+        },
+        "wins": {
+          "type": "integer",
+          "description": "Total matches won."
+        },
+        "losses": {
+          "type": "integer",
+          "description": "Total matches lost."
+        },
+        "draws": {
+          "type": "integer",
+          "description": "Total matches drawn."
+        },
+        "lastEloDelta": {
+          "type": "integer",
+          "description": "Elo change from the most recent match."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "commander",
+        "colorIdentity",
+        "bracket",
+        "archived",
+        "elo",
+        "peakElo",
+        "gamesPlayed",
+        "wins",
+        "losses",
+        "draws",
+        "lastEloDelta",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Opponent": {
+      "title": "Opponent",
+      "description": "A playgroup opponent tracked against the user, including head-to-head win rate and Elo rating.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "name": {
+          "type": "string",
+          "description": "Opponent display name (1-50 chars)."
+        },
+        "favoriteCommander": {
+          "type": "string",
+          "description": "Optional signature commander."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional playgroup notes."
+        },
+        "avatarColorHex": {
+          "type": "string",
+          "description": "Hex color string (#RRGGBB) for avatar badge."
+        },
+        "elo": {
+          "type": "integer",
+          "description": "Current Elo rating (starts at 1200)."
+        },
+        "peakElo": {
+          "type": "integer",
+          "description": "Highest Elo rating achieved."
+        },
+        "gamesPlayed": {
+          "type": "integer",
+          "description": "Total logged pods this opponent participated in."
+        },
+        "wins": {
+          "type": "integer",
+          "description": "Total pods won by this opponent."
+        },
+        "winsAgainstUser": {
+          "type": "integer",
+          "description": "Matches where this opponent won while the user lost."
+        },
+        "lossesToUser": {
+          "type": "integer",
+          "description": "Matches where the user won against this opponent."
+        },
+        "draws": {
+          "type": "integer",
+          "description": "Total drawn pods."
+        },
+        "lastEloDelta": {
+          "type": "integer",
+          "description": "Elo change from the most recent match."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "avatarColorHex",
+        "elo",
+        "peakElo",
+        "gamesPlayed",
+        "wins",
+        "winsAgainstUser",
+        "lossesToUser",
+        "draws",
+        "lastEloDelta",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MatchRecord": {
+      "title": "MatchRecord",
+      "description": "A recorded Commander pod match with participants, outcome, and computed Elo changes.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "deckId": {
+          "type": "string",
+          "description": "Document ID of the user's deck played."
+        },
+        "deckName": {
+          "type": "string",
+          "description": "Snapshot name of the user's deck."
+        },
+        "deckCommander": {
+          "type": "string",
+          "description": "Snapshot commander of the user's deck."
+        },
+        "deckColorIdentity": {
+          "type": "array",
+          "description": "Color identity snapshot of the user's deck."
+        },
+        "opponentIds": {
+          "type": "array",
+          "description": "Document IDs of opponents in the pod (1-5)."
+        },
+        "opponentNames": {
+          "type": "array",
+          "description": "Names of opponents in the pod aligned with opponentIds."
+        },
+        "opponentCommanders": {
+          "type": "array",
+          "description": "Optional commander names played by opponents."
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["WIN", "LOSS", "DRAW"],
+          "description": "Match outcome from the user's perspective."
+        },
+        "winnerType": {
+          "type": "string",
+          "enum": ["USER", "OPPONENT", "TEAM", "DRAW"],
+          "description": "Who won the pod (single player, multi-winner team, or draw)."
+        },
+        "winningOpponentId": {
+          "type": "string",
+          "description": "Document ID of the winning opponent when winnerType is OPPONENT."
+        },
+        "winningOpponentName": {
+          "type": "string",
+          "description": "Name of the winning opponent when winnerType is OPPONENT."
+        },
+        "winningOpponentIds": {
+          "type": "array",
+          "description": "Document IDs of winning opponents when winnerType is TEAM (1-5)."
+        },
+        "winningOpponentNames": {
+          "type": "array",
+          "description": "Names of winning opponents aligned with winningOpponentIds when winnerType is TEAM."
+        },
+        "podSize": {
+          "type": "integer",
+          "description": "Total number of players in the pod (2-6)."
+        },
+        "turnCount": {
+          "type": "integer",
+          "description": "Optional turn count when the game ended."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional match summary notes."
+        },
+        "deckEloBefore": {
+          "type": "integer",
+          "description": "Deck Elo prior to this match."
+        },
+        "deckEloAfter": {
+          "type": "integer",
+          "description": "Deck Elo after this match."
+        },
+        "deckEloDelta": {
+          "type": "integer",
+          "description": "Deck Elo delta from this match."
+        },
+        "opponentEloDeltas": {
+          "type": "object",
+          "description": "Map of opponentId to Elo delta from this match."
+        },
+        "playedAtMillis": {
+          "type": "integer",
+          "description": "Epoch milliseconds when the match was played."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "deckId",
+        "deckName",
+        "deckCommander",
+        "deckColorIdentity",
+        "opponentIds",
+        "opponentNames",
+        "opponentCommanders",
+        "outcome",
+        "winnerType",
+        "podSize",
+        "deckEloBefore",
+        "deckEloAfter",
+        "deckEloDelta",
+        "opponentEloDeltas",
+        "playedAtMillis",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/decks/{deckId}": {
+      "schema": { "$ref": "#/entities/Deck" },
+      "description": "User-owned Commander decks with record and Elo stats."
+    },
+    "/users/{userId}/opponents/{opponentId}": {
+      "schema": { "$ref": "#/entities/Opponent" },
+      "description": "User-tracked playgroup opponents with win rate against user and Elo stats."
+    },
+    "/users/{userId}/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/MatchRecord" },
+      "description": "User-recorded Commander pod match history and Elo deltas."
+    }
+  }
+}
